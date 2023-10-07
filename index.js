@@ -1,5 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const { error } = require('console');
 const app = express();
 
 app.use(express.json());
@@ -28,58 +30,82 @@ const authenticateJwt = (req,res,next)=>{
   }
 }
 
-let ADMINS = [];
-let USERS = [];
-let COURSES = [];
-
 // Admin routes
+//admin signup
 app.post('/admin/signup', (req, res) => {
   let admin = req.body;
-  const exists = ADMINS.find(a=>a.username===admin.username);
-  if(exists){
-    res.status(403).json({"message":"admin already exists!"});
-  }
-  else{
-    token = generateJwt(admin);
-    ADMINS.push(admin);
-    res.json({"message":"admin signup successfull",token});
-  }
+  fs.readFile('Admins.json','utf-8',(err,data)=>{
+    data = JSON.parse(data);
+    const exists = data.find(a=>a.username===admin.username);
+    if(exists){
+      res.status(403).json({"message":"admin already exists!"});
+    }
+    else{
+      token = generateJwt(admin);
+      data.push(admin);
+      fs.writeFile("Admins.json",JSON.stringify(data),(err)=>{
+        if(err) throw err;
+      });
+      res.json({"message":"admin signup successfull",token});
+    }
+  });
 });
 
+//admin login
 app.post('/admin/login', (req, res) => {
   let admin = req.headers;
-  const exists = ADMINS.find(a=>a.username===admin.username && a.password===admin.password);
+  fs.readFile('Admins.json','utf-8',(err,data)=>{
+    data = JSON.parse(data);
+    const exists = data.find(a=>a.username===admin.username && a.password===admin.password);
 
-  if(exists){
-    token = generateJwt(admin);
-    res.json({"message":"user login successfull",token});
-  }
-  else{
-    res.status(403);
-  }
+    if(exists){
+      token = generateJwt(admin);
+      res.json({"message":"user login successfull",token});
+    }
+    else{
+      res.status(403);
+    }
+  });
 });
 
+//add courses
 app.post('/admin/courses',authenticateJwt, (req, res) => {
   let course = req.body;
-  COURSES.push({...course,id:COURSES.length+1});
+  fs.readFile("Courses.json","utf-8",(err,data)=>{
+    if(err) throw err;
+    data = JSON.parse(data);
+    data.push({...course,id:data.length+1});
+    fs.writeFile("Courses.json",JSON.stringify(data),(err)=>{
+      if(err) throw err;
+    })
+  });
   res.json({"message":"course successfully created","courseId":course.id});
 });
 
+//update courses
 app.put('/admin/courses/:courseId',authenticateJwt, (req, res) => {
   let id = parseInt(req.params.courseId);
-  console.log(req.user.username);
-  let exists = COURSES.find(c=>(id===c.id && c.published));
-  if(exists){
-    Object.assign(exists,req.body);
-    res.json({"messsage":"Course updated successfully"});
-  }
-  else{
-    res.status(403).json({"message":"failed"});
-  }
+  fs.readFile("Courses.json","utf-8",(err,data)=>{
+    data = JSON.parse(data);
+    let exists = data.find(c=>(id===c.id && c.published));
+    if(exists){
+      let index = data.indexOf(exists);
+      data[index] = req.body;
+      fs.writeFile("Courses.json",JSON.stringify(data),(err)=>{
+        if(err) throw err;
+      });
+      res.json({"messsage":"Course updated successfully"});
+    }
+    else{
+      res.status(403).json({"message":"failed"});
+    }
+  });
 });
 
 app.get('/admin/courses',authenticateJwt, (req, res) => {
-  res.json({courses :COURSES});
+  fs.readFile("Courses.json","utf-8",(err,data)=>{
+    res.json({courses :JSON.parse(data)});
+  });
 });
 
 // User routes
