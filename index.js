@@ -87,7 +87,7 @@ app.put('/admin/courses/:courseId',authenticateJwt, (req, res) => {
   let id = parseInt(req.params.courseId);
   fs.readFile("Courses.json","utf-8",(err,data)=>{
     data = JSON.parse(data);
-    let exists = data.find(c=>(id===c.id && c.published));
+    let exists = data.find(c=>(id===c.id));
     if(exists){
       let index = data.indexOf(exists);
       data[index] = req.body;
@@ -154,30 +154,40 @@ app.get('/users/courses',authenticateJwt, (req, res) => {
 
 app.post('/users/courses/:courseId',authenticateJwt, (req, res) => {
   let id = parseInt(req.params.courseId);
-  let course = COURSES.find(c=>(c.id===id && c.published));
-  if(course){
-    let user = USERS.find(u=>(u.username===req.user.username));
-    if(user){
-      if(!user.purchasedCourses){
-        user.purchasedCourses=[];
-      }
-      user.purchasedCourses.push(course);
-      res.json({"message":"course successfully purchased"});
+  fs.readFile("Courses.json","utf-8",(err,data)=>{
+    data = JSON.parse(data);
+    let course = data.find(c=>c.id===id && c.published);
+    if(course){
+      fs.readFile("Users.json","utf-8",(err,data1)=>{
+        data1 = JSON.parse(data1);
+        let user = data1.find(u=>u.username===req.user.username);
+        if(user){
+          if(!user.purchasedCourses){
+            let index = data1.indexOf(user);
+            data1[index].purchasedCourses=[]
+            data1[index].purchasedCourses.push(course);
+          }
+          fs.writeFile("Users.json",JSON.stringify(data1),(err)=>{
+          });
+        }
+      });
+      res.json({"message" :"purchase successfull"})
     }
-  }
-  else{
-    res.status(403).json({"message":"course id not valid"});
-  }
+  });
 });
 
 app.get('/users/purchasedCourses',authenticateJwt, (req, res) => {
-  const user = USERS.find(u=>(u.username===req.user.username));
-  if(user && user.purchasedCourses){
-    res.json({purchasedCourses:user.purchasedCourses});
-  }
-  else{
-    res.status(403).json({messgae:"user did not purchase any books"});
-  }
+  fs.readFile("Users.json","utf-8",(err,data)=>{
+    if(err) throw err;
+    data = JSON.parse(data);
+    let user = data.find(u=>u.username===req.user.username);
+    if(user && user.purchasedCourses){
+      res.json({"purchased courses":user.purchasedCourses});
+    }
+    else{
+      res.status(403).send("No purchased courses");
+    }
+  })
 });
 
 app.listen(3000, () => {

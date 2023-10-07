@@ -1,1 +1,30 @@
-[]
+[
+  {
+    "username": "user1",
+    "password": "user1",
+    "purchasedCourses": [
+      {
+        "title": "course1",
+        "description": "desc1",
+        "price": 1000,
+        "imageLink": "random1.com",
+        "published": true,
+        "id": 1
+      }
+    ]
+  },
+  {
+    "username": "user2",
+    "password": "user2",
+    "purchasedCourses": [
+      {
+        "title": "course2",
+        "description": "desc2",
+        "price": 1200,
+        "imageLink": "random2.com",
+        "published": true,
+        "id": 2
+      }
+    ]
+  }
+]
