@@ -111,32 +111,45 @@ app.get('/admin/courses',authenticateJwt, (req, res) => {
 // User routes
 app.post('/users/signup', (req, res) => {
   let user = req.body;
-  let existingUser = USERS.find(u=>{user.username===u.username});
-  if(existingUser){
-    res.status(403).json({"message":"user already exists"});
-  }
-  else{
-    USERS.push(user);
-    let token = generateJwt(user);
-    res.json({"message":"user signup successfull",token});
-  }
+  fs.readFile("Users.json","utf-8",(err,data)=>{
+    data = JSON.parse(data);
+    let existingUser = data.find(u=>(user.username===u.username));
+    if(existingUser){
+      res.status(403).json({"message":"user already exists"});
+    }
+    else{
+      data.push(user);
+      fs.writeFile("Users.json",JSON.stringify(data),(err)=>{
+        if(err) throwerr;
+      });
+      let token = generateJwt(user);
+      res.json({"message":"user signup successfull",token});
+    }
+  });
 });
 
 app.post('/users/login', (req, res) => {
   let {username,password} = req.headers;
-  let existingUser = USERS.find(u=>(username===u.username && password===u.password));
-  if(existingUser){
-    let token = generateJwt(existingUser);
-    res.json({"message":"user login successfull",token});
-  }
-  else{
-    res.status(403).json({ message: 'User authentication failed' });
-  }
+  fs.readFile("Users.json","utf-8",(err,data)=>{
+    data = JSON.parse(data);
+    let existingUser = data.find(u=>(username===u.username && password===u.password));
+    if(existingUser){
+      let token = generateJwt(existingUser);
+      res.json({"message":"user login successfull",token});
+    }
+    else{
+      res.status(403).json({ message: 'User authentication failed' });
+    }
+  });
 });
 
 app.get('/users/courses',authenticateJwt, (req, res) => {
-  let publishedCourses = COURSES.filter(c=>c.published);
-  res.json({courses:publishedCourses});
+  fs.readFile("Courses.json","utf-8",(err,data)=>{
+    if(err) throw err;
+    data = JSON.parse(data);
+    let courses = data.filter(c=>c.published);
+    res.json({publishedCourses:courses});
+  })
 });
 
 app.post('/users/courses/:courseId',authenticateJwt, (req, res) => {
