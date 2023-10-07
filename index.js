@@ -90,21 +90,21 @@ app.post('/users/signup', (req, res) => {
     res.status(403).json({"message":"user already exists"});
   }
   else{
-    let token = generateJwt(user);
     USERS.push(user);
+    let token = generateJwt(user);
     res.json({"message":"user signup successfull",token});
   }
 });
 
 app.post('/users/login', (req, res) => {
-  let user = req.headers;
-  let existingUser = USERS.find(u=>{user.username===u.username && user.password===u.password});
+  let {username,password} = req.headers;
+  let existingUser = USERS.find(u=>(username===u.username && password===u.password));
   if(existingUser){
-    let token = generateJwt(user);
+    let token = generateJwt(existingUser);
     res.json({"message":"user login successfull",token});
   }
   else{
-    res.json(403);
+    res.status(403).json({ message: 'User authentication failed' });
   }
 });
 
@@ -119,8 +119,11 @@ app.post('/users/courses/:courseId',authenticateJwt, (req, res) => {
   if(course){
     let user = USERS.find(u=>(u.username===req.user.username));
     if(user){
+      if(!user.purchasedCourses){
+        user.purchasedCourses=[];
+      }
       user.purchasedCourses.push(course);
-      res.json({"message":"Book successfully purchased"});
+      res.json({"message":"course successfully purchased"});
     }
   }
   else{
