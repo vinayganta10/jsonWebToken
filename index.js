@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const fs = require('fs');
 const { error } = require('console');
 const app = express();
