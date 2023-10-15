@@ -25,7 +25,7 @@ const CourseSchema = mongoose.Schema({
 
 const userSchema = mongoose.Schema({
     username : String,
-    password : String
+    password : String,
 })
 
 const Admin = mongoose.model('Admin',AdminSchema);
