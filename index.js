@@ -10,7 +10,7 @@ app.use(express.json());
 const secretKey = "secr1tkey"
 
 const generateJwt = (user)=>{
-  let payload = {"username":user.username};
+  let payload = {"username":user.username,"password":user.password};
   return jwt.sign(payload,secretKey,{expiresIn:'1h'});
 }
 
@@ -109,6 +109,12 @@ app.get('/admin/courses',authenticateJwt, (req, res) => {
   });
 });
 
+app.get('/admin/all',authenticateJwt,(req,res)=>{
+  fs.readFile("Admins.json","utf-8",(err,data)=>{
+    res.json({Admins:JSON.parse(data)});
+  });
+});
+
 // User routes
 app.post('/users/signup', (req, res) => {
   let user = req.body;
@@ -116,12 +122,18 @@ app.post('/users/signup', (req, res) => {
     data = JSON.parse(data);
     let existingUser = data.find(u=>(user.username===u.username));
     if(existingUser){
-      res.status(403).json({"message":"user already exists"});
+      if(existingUser.password === user.password){
+        res.status(403).json({"message":"Just login"});
+      }
+      else{
+        res.status(403).json({"message":"Try again"});
+      }
     }
     else{
+      user.count = 0;
       data.push(user);
       fs.writeFile("Users.json",JSON.stringify(data),(err)=>{
-        if(err) throwerr;
+        if(err) throw err;
       });
       let token = generateJwt(user);
       res.json({"message":"user signup successfull",token});
@@ -133,13 +145,27 @@ app.post('/users/login', (req, res) => {
   let {username,password} = req.headers;
   fs.readFile("Users.json","utf-8",(err,data)=>{
     data = JSON.parse(data);
-    let existingUser = data.find(u=>(username===u.username && password===u.password));
-    if(existingUser){
-      let token = generateJwt(existingUser);
-      res.json({"message":"user login successfull",token});
+    let existingUser = data.find(u=>(username===u.username));
+    if(existingUser.count>2){
+      let data1 = data.filter(u=>u.username!==username);
+      fs.writeFile("Users.json",JSON.stringify(data1),(err)=>{if(err){throw err;}});
+      res.status(403).json({"message":"Login too many times.Sorry account deleted."});
     }
     else{
-      res.status(403).json({ message: 'User authentication failed' });
+      if(existingUser){
+        if(existingUser.password == password){
+          let token = generateJwt(existingUser);
+          res.json({"message":"user login successfull",token});
+        }
+        else{
+          existingUser.count += 1;
+          fs.writeFile("Users.json",JSON.stringify(data),(err)=>{if(err){throw err;}});
+          res.send("wrong password");
+        }
+      }
+      else{
+        res.status(403).json({ message: 'User authentication failed' });
+      }
     }
   });
 });
@@ -191,6 +217,6 @@ app.get('/users/purchasedCourses',authenticateJwt, (req, res) => {
   })
 });
 
-app.listen(3000, () => {
-  console.log('Server is listening on port 3000');
+app.listen(4000, () => {
+  console.log('Server is listening on port 4000');
 });
