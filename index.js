@@ -6,6 +6,7 @@ const { error } = require('console');
 const app = express();
 
 app.use(express.json());
+app.set('view engine', 'ejs');
 
 const secretKey = "secr1tkey"
 
@@ -30,6 +31,7 @@ const authenticateJwt = (req,res,next)=>{
     res.status(401);
   }
 }
+
 
 // Admin routes
 //admin signup
@@ -58,7 +60,7 @@ app.post('/admin/login', (req, res) => {
   fs.readFile('Admins.json','utf-8',(err,data)=>{
     data = JSON.parse(data);
     const exists = data.find(a=>a.username===admin.username && a.password===admin.password);
-
+    
     if(exists){
       token = generateJwt(admin);
       res.json({"message":"user login successfull",token});
@@ -218,6 +220,6 @@ app.get('/users/purchasedCourses',authenticateJwt, (req, res) => {
   })
 });
 
-app.listen(4000, () => {
-  console.log('Server is listening on port 4000');
+app.listen(process.env.port, () => {
+  console.log(`Server is listening on port ${process.env.port}`);
 });
