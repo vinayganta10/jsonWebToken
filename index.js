@@ -72,6 +72,7 @@ app.post('/admin/login', (req, res) => {
 //add courses
 app.post('/admin/courses',authenticateJwt, (req, res) => {
   let course = req.body;
+  console.log(req.user);
   fs.readFile("Courses.json","utf-8",(err,data)=>{
     if(err) throw err;
     data = JSON.parse(data);
